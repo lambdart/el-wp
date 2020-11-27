@@ -65,12 +65,6 @@
   :group 'wall
   :safe t)
 
-(defcustom wall-program-switches "-g +0-0"
-  "Program switches that will be used by `wall-program'."
-  :type 'string
-  :group 'wall
-  :safe t)
-
 (defcustom wall-message-prefix "[Wall-e]: "
   "The `wall-mode' message prefix."
   :type 'string
@@ -232,18 +226,48 @@ If ARGS is non-nil asks for the custom program
            (read-string "Args: " wall-program-args))))
   (cond
    ((not (executable-find wall-program))
-    (wall--debug-message "Program %s isn't an executable" wall-program))
+    (wall--debug-message "Program %s isn't executable" wall-program))
    ;; verify if the file exists and it's a regular file
    ((or (file-directory-p wallpaper)
         (not (file-exists-p wallpaper)))
     (wall--debug-message "File %s not found" wallpaper))
    (t
     ;; TODO: Research, it is really necessary replace this for start-process?
-    (async-shell-command (format "%s %s %s %s"
+    (async-shell-command (format "%s %s %s"
                                  wall-program
-                                 (concat wall-program-args (or args ""))
-                                 wall-program-switches
+                                 (or args wall-program-args)
                                  wallpaper)))))
+
+(defun wall-reset-current-wallpaper ()
+  "Reset current wallpaper."
+  (interactive)
+  ;; get current wallpaper
+  (let ((wallpaper (nth wall-images-index
+                        wall-images-list)))
+    ;; reset current wallpaper
+    (wall-set-wallpaper wallpaper nil)))
+
+(defun wall-update-current-wallpaper-position (pos)
+  "Update current wallpaper POS (position)."
+  (interactive "sY-Position : ")
+  ;; get current wallpaper
+  (let ((wallpaper (nth wall-images-index
+                        wall-images-list))
+        ;; get the number as a integer
+        (num (string-to-number pos)))
+    ;; set default position if none of the conditions meet
+    ;; if/else-if/else equivalent
+    (or (string-equal pos "-0")
+        (string-equal pos "+0")
+        (not (equal num 0))
+        ;; set default value
+        (setq pos "+0"))
+    ;; update pos signal indicator (if necessary)
+    (when (eq (string-match-p "^[\+\-]" pos) nil)
+      (setq pos (concat "+" pos)))
+    ;; set new wallpaper Y position
+    (wall-set-wallpaper wallpaper
+                        (format "--bg-fill -g +0%s" pos))))
 
 (defun wall-rotate-wallpaper (&optional random)
   "Set next/or RANDOM wallpaper.
