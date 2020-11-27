@@ -1,15 +1,16 @@
-;;; wall.el --- Wallpaper management. -*- lexical-binding: t -*-
+;;; wall.el --- summary -*- lexical-binding: t -*-
 ;;
-;; Author: esac <esac-io@tutanota.com>
+;; Author: lambdart <lambdart@protonmail.com>
+;; Maintainer: lambdart
+;; Homepage: https://github.com/lambdart/wall.el
 ;; Version: 0.0.1 Alpha
-;; Keywords: wallpaper management elisp emacs
-;; URL: https://github.com/esac-io/wall-el
+;; Keywords: wallpaper background image
 ;;
 ;; This file is NOT part of GNU Emacs.
 ;;
 ;;; MIT License
 ;;
-;; Copyright (c) 2020 esac
+;; Copyright (c) 2020 lambdart
 ;;
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +34,7 @@
 ;;
 ;; This library provides functionalities and options related to the
 ;; management of wallpapers, i.e, options, commands and timers
-;; to set the background.
+;; to set the proper background image.
 ;;
 ;;; Code:
 
@@ -47,7 +48,7 @@
 
 (defcustom wall-root-dir
   (expand-file-name "~/media/images/wallpapers/")
-  "Root directory the search/find starting point."
+  "Root directory, the starting point for search functions."
   :type 'directory
   :group 'wall
   :safe t)
@@ -59,25 +60,19 @@
   :safe t)
 
 (defcustom wall-program-args "--bg-fill"
-  "Program arguments."
+  "Arguments that will be used by `wall-program'."
   :type 'string
   :group 'wall
   :safe t)
 
-(defcustom wall-program-switches "-g +0+0"
-  "Program switches."
+(defcustom wall-program-switches "-g +0-0"
+  "Program switches that will be used by `wall-program'."
   :type 'string
   :group 'wall
   :safe t)
 
 (defcustom wall-message-prefix "[Wall-e]: "
   "The `wall-mode' message prefix."
-  :type 'string
-  :group 'wall
-  :safe t)
-
-(defcustom wall-minor-mode-string "wall"
-  "The `wall-mode' mode-line light string."
   :type 'string
   :group 'wall
   :safe t)
@@ -100,7 +95,7 @@
   :group 'wall
   :safe t)
 
-(defcustom  wall-countdown 300
+(defcustom  wall-countdown 600
   "Wallpaper rotation interval in seconds.
 Default 10 minutes."
   :type 'string
@@ -110,6 +105,12 @@ Default 10 minutes."
 (defcustom wall-images-list '()
   "Wallpapers images list"
   :type 'directory
+  :group 'wall
+  :safe t)
+
+(defcustom wall-minor-mode-string "wall-e"
+  "String to be displayed in the mode-line."
+  :type 'string
   :group 'wall
   :safe t)
 
@@ -156,11 +157,11 @@ See `message' for more information about FMT and ARGS arguments."
   (setq  wall-images-index 0))
 
 (defun wall-run-timer ()
-  "Start wallpaper rotate  timer functionality."
+  "Start/Initialize wallpaper rotate timer."
   (interactive)
   (cond
    ;; verify if idle timer was already initialized
-   ((not (eq wall-timer nil)) nil
+   ((not (eq wall-timer nil))
     (wall--debug-message "timer already on"))
    ;; default: run-timer
    (t
@@ -175,7 +176,7 @@ See `message' for more information about FMT and ARGS arguments."
                          wall-countdown))))
 
 (defun wall-cancel-timer ()
-  "Cancel `wall-timer'."
+  "Cancel/Disables `wall-timer'."
   (interactive)
   ;; remove time if was set
   (if (not wall-timer) nil
@@ -186,7 +187,7 @@ See `message' for more information about FMT and ARGS arguments."
   (wall--debug-message "timer off"))
 
 (defun wall-reload-timer ()
-  "Reload `wall-timer'.
+  "Reload (cancel/start) `wall-timer'.
 Invoke this function to apply the new
 value of `wall-timer.'"
   (interactive)
@@ -206,16 +207,18 @@ value of `wall-timer.'"
     ;; run (start) timer
     (wall-run-timer)))
 
-(defun wall-update-timer (seconds &optional arg)
+(defun wall-set-timer (seconds &optional arg)
   "Set `wall-countdown' TIME seconds.
-If ARG, reload the idle timer."
+If ARG, force the reloading of timer, otherwise
+asks for it."
   (interactive
    (list (read-number "Time in seconds: ")
          current-prefix-arg))
   ;; update idle elapse time (in seconds)
   (setq wall-countdown seconds)
-  ;; reload idle timer functionality
-  (when arg (wall-reload-timer)))
+  ;; reload timer
+  (if (or arg (y-or-n-p "Reload timer?"))
+      (wall-reload-timer)))
 
 (defun wall-set-wallpaper (wallpaper &optional args)
   "Set WALLPAPER (full path image file) as the background.
@@ -243,7 +246,9 @@ If ARGS is non-nil asks for the custom program
                                  wallpaper)))))
 
 (defun wall-rotate-wallpaper (&optional random)
-  "Set next/or RANDOM wallpaper."
+  "Set next/or RANDOM wallpaper.
+If optional RANDOM argument isn't nil, set next wallpaper
+'randomly'."
   (interactive "P")
   (let ((lim (length wall-images-list)))
     (when (> lim 0)
@@ -323,8 +328,8 @@ If optional ARG is non-nil, force the activation of
         (or arg (not wall-debug-messages-flag)))
   ;; display log message in echo area
   (message "[Wall-e]: Debug messages: %s"
-           (if wall-debug-messages-flag "on" "off")))
 
+           (if wall-debug-messages-flag "on" "off")))
 (defun wall-echo-mode-state ()
   "Show `wall-mode' state: on or off."
   (interactive)
@@ -361,7 +366,7 @@ and disables it otherwise."
 
 ;;;###autoload
 (defun turn-on-wall-mode ()
-  "Enable wall minor mode."
+  "Enables wall-el minor-mode."
   (interactive)
   ;; turn on wall-mode mode
   (wall-mode 1)
@@ -369,7 +374,7 @@ and disables it otherwise."
   (wall-echo-mode-state))
 
 (defun turn-off-wall-mode ()
-  "Disable wall minor mode."
+  "Disables wall-el minor-mode."
   (interactive)
   ;; turn off wall-mode mode
   (wall-mode 0)
@@ -379,4 +384,3 @@ and disables it otherwise."
 (provide 'wall)
 
 ;;; wall.el ends here
-
