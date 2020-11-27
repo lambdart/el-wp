@@ -6,30 +6,35 @@
 
 * Introduction
 
-  This library provides ways to manager wallpapers using the =feh=
-  unix utility to set the background image, the collections of
-  wallpaper images (list) are made at run-time after the minor-mode
-  is initialized by the command: =turn-on-wall-mode=, the custom
-  variable =wall-root-dir= determine the starting point for the
-  search.
+  This library provides ways to manager wallpapers using the =feh(1)=
+  unix utility to draw a background image, the collections of
+  wallpapers (images list) are scraped at run-time after the
+  minor-mode initialization, usually triggered by the command:
+  =turn-on-wall-mode=.
 
-  The commands prefixed by =wall-= can be used to interactively
-  set, rotate, random set wallpapers using the `minibuffer' (=command
-  prompt=) facility. The most important are:
+  The custom variable =wall-root-dir= determines the searching
+  starting point (related to the file system).
 
-  - =turn-on-wall-mode=  :: Enables wall minor-mode
-    This command will initialize the images (wallpapers) list.
+  Commands prefixed by =wall-= can be used to interactively
+  set, rotate (sequentially or random) wallpapers using the
+  `minibuffer' (=M-x=) (=command prompt=) facility.
+
+  The most often used ones:
+
+  - =turn-on-wall-mode=  :: Enables the =Wall= minor-mode
+    This command will search and set the images list (wallpapers).
 
   - =wall-set-wallpaper= :: Set WALLPAPER (full path image file) as
     the background. If ARGS (optional) is non-nil asks for the custom
     program (`wall-program') arguments.
 
   - =wall-update-timer= :: Set `wall-countdown' TIME seconds.
-    If (optional) ARG, force the reloading of timer, otherwise asks for it.
+    If (optional) ARG, force the reloading of timer, otherwise asks
+    for it.
 
   - =wall-rotate-wallaper= ::  Set next/or RANDOM wallpaper.
     If optional RANDOM argument isn't nil, set next wallpaper
-    'randomly'."
+    'randomly'.
 
 * Motivation
 
@@ -162,8 +167,7 @@
 * EOF
 
   #+BEGIN_SRC
-  Put on your Synday clothes, there's lots of world out
-  there.
+  We don't need no thought control
+  No dark sarcasm in the classroom
   #+END_SRC
-  | Wall-e |
-
+  | Pink Floyd - Another Brick In The Wall |
