@@ -130,7 +130,7 @@
     If ARG, force the reloading of timer, otherwise
     asks for it.
 
-  - =wall-reload-timer= Reload (cancel/start) `wall-timer'.
+  - =wall-reload-timer= :: Reload (cancel/start) `wall-timer'.
     Invoke this function to apply the new
     value of `wall-timer.'
 
