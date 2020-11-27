@@ -241,8 +241,8 @@ If ARGS is non-nil asks for the custom program
     ;; TODO: Research, it is really necessary replace this for start-process?
     (async-shell-command (format "%s %s %s %s"
                                  wall-program
-                                 wall-program-args
-                                 (or args "")
+                                 (concat wall-program-args (or args ""))
+                                 wall-program-switches
                                  wallpaper)))))
 
 (defun wall-rotate-wallpaper (&optional random)
