@@ -1,0 +1,169 @@
+#+AUTHOR: lambdart
+#+EMAIL: lambdart@protonmail.com
+#+KEYWORDS: readme, emacs, elisp, library, wallpaper, management, background
+#+LANGUAGE: en
+#+PROPERTY: header-args :tangle no
+
+* Introduction
+
+  This library provides ways to manager wallpapers using the =feh=
+  unix utility to set the background image, the collections of
+  wallpaper images (list) are made at run-time after the minor-mode
+  is initialized by the command: =turn-on-wall-mode=, the custom
+  variable =wall-root-dir= determine the starting point for the
+  search.
+
+  The commands prefixed by =wall-= can be used to interactively
+  set, rotate, random set wallpapers using the `minibuffer' (=command
+  prompt=) facility. The most important are:
+
+  - =turn-on-wall-mode=  :: Enables wall minor-mode
+    This command will initialize the images (wallpapers) list.
+
+  - =wall-set-wallpaper= :: Set WALLPAPER (full path image file) as
+    the background. If ARGS (optional) is non-nil asks for the custom
+    program (`wall-program') arguments.
+
+  - =wall-update-timer= :: Set `wall-countdown' TIME seconds.
+    If (optional) ARG, force the reloading of timer, otherwise asks for it.
+
+  - =wall-rotate-wallaper= ::  Set next/or RANDOM wallpaper.
+    If optional RANDOM argument isn't nil, set next wallpaper
+    'randomly'."
+
+* Motivation
+
+  Just missing a way to quickly change wallpapers (draw a background
+  image) from my favorite 'lisp-machine (=Emacs=).
+
+* Features
+
+  - Scan images in the file system from a root folder,
+    forming the wallpapers collection
+  - Add/Remove images interactively
+  - Start/Cancel wallpaper rotation (using timer).
+  - Update timer and other aspects from the `minibuffer'.
+
+* Version
+
+  - 0.0.1 Alpha
+
+* Dependencies
+** Elisp
+   - files
+   - cl-extra
+** Unix
+   - Feh
+* Tested on
+
+  | Emacs   | 27.1 | 28.0 |
+  | FreeBSD | 12.1 |      |
+  | OpenBSD |  6.8 |      |
+
+* Installation
+** Manually
+
+   Clone =wall.el= repository to an arbitrary location:
+
+   #+BEGIN_SRC sh
+
+   $ git clone https://github.com/lambdart/wall.el ~/.emacs.d/site-elisp/wall
+
+   #+END_SRC
+
+   Add =wall.el= directory to =load-path= in your
+   Emacs initialization file (~init.el~) and load it.
+
+   #+BEGIN_SRC emacs-lisp
+
+   ;; add to load-path
+   (add-to-list 'load-path "/replace/me/to/wall/full/path")
+
+   ;; load wall feature (optinal)
+   (require 'wall nil t)
+
+   #+END_SRC
+
+   - Note: For a more dynamic approach:
+     - =M-x load-file RET=
+     - =M-x load-library RET wall RET=
+
+** Compilation
+
+   * Note: Optional (recommended).
+
+   To compile the files to the =Elisp= byte-compiled representation:
+
+   #+BEGIN_SRC sh
+
+   [at-wall-root-directory]$ make
+
+   #+END_SRC
+
+** Configuration
+
+   Add this to your initialization file to enable wall-mode
+   after =Emacs= starts.
+
+   #+BEGIN_SRC emacs-lisp
+
+   (add-hook 'window-setup-hook #'turn-on-wall-mode)
+
+   #+END_SRC
+
+* Commands
+
+  Besides the already listed commands, we have:
+
+  - =turn-off-wall-mode= :: Disables wall minor-mode.
+
+  - =wall-run-timer= :: Start/Initialize wallpaper rotate timer.
+
+  - =wall-cancel-timer= :: Cancel/Disables `wall-timer'.
+
+  - =wall-set-timer= :: Set `wall-countdown' TIME seconds.
+    If ARG, force the reloading of timer, otherwise
+    asks for it.
+
+  - =wall-reload-timer= Reload (cancel/start) `wall-timer'.
+    Invoke this function to apply the new
+    value of `wall-timer.'
+
+* Customize
+
+  * Note: To see all the options from =Emacs= directly, and to customize it,
+    just type: =M-x customize-group RET wall RET=.
+
+  - =wall-minor-mode-string= :: String to be displayed in mode-line.
+    Default: "wall"
+
+  - =wall-root-dir= :: Root directory, the starting point for search
+    functions. Default: "~/media/images/wallpapers/"
+
+  - =wall-program= :: An Image viewer/set program. Default: "feh"
+
+  - =wall-program-args= :: Arguments that will be used by
+    `wall-program'. Default: "--bg-fill".
+
+  - =wall-program-switches= ::  Program switches that will be used by
+    `wall-program'. Default: "-g +0-0"
+
+  - =wall-countdown= :: Wallpaper rotation interval in seconds.
+    Default: 600 seconds (10 minutes)
+
+* References
+
+  1. https://www.gnu.org/software/emacs/manual/html_node/elisp/Files.html
+  2. https://www.gnu.org/software/emacs/manual/html_node/elisp/Regular-Expressions.html
+  3. https://www.gnu.org/software/emacs/manual/html_node/emacs/Single-Shell.html
+
+* LICENSE
+  MIT
+* EOF
+
+  #+BEGIN_SRC
+  Put on your Synday clothes, there's lots of world out
+  there.
+  #+END_SRC
+  | Wall-e |
+
