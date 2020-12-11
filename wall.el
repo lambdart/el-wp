@@ -119,6 +119,9 @@ Default 10 minutes."
 (defvar wall-images-index 0
   "Wallpaper (images) list current index.")
 
+(defvar wall-images-index-history '()
+  "Wallpaper index history.")
+
 (defvar wall-mode nil
   "Non-nil means that wall-mode is enabled.
 Altering this variable directly has no effect.")
@@ -150,6 +153,12 @@ See `message' for more information about FMT and ARGS arguments."
   ;; restore index and length initial values
   (setq  wall-images-index 0))
 
+(defun wall--reload-timer ()
+  "Maybe reload the timer."
+  (if (not wall-timer) nil
+    (wall-cancel-timer)
+    (wall-run-timer)))
+
 (defun wall-run-timer ()
   "Start/Initialize wallpaper rotate timer."
   (interactive)
@@ -163,7 +172,7 @@ See `message' for more information about FMT and ARGS arguments."
     (setq wall-timer
           (run-with-timer wall-countdown
                           nil
-                          'wall-rotate-wallpaper
+                          'wall-set-next-wallpaper
                           t))
     ;; show debug message
     (wall--debug-message "timer on: countdown %s seconds"
@@ -185,29 +194,17 @@ See `message' for more information about FMT and ARGS arguments."
 Invoke this function to apply the new
 value of `wall-timer.'"
   (interactive)
-  ;; cancel (delete) previous timer
   (wall-cancel-timer)
-  ;; run (start) timer
   (wall-run-timer)
-  ;; show the current
+  ;; show the current count down timer
   (wall--debug-message "current time %ds" wall-countdown))
 
-(defun wall--reload-timer ()
-  "Maybe reload the timer."
-  ;; if not timer just leave
-  (if (not wall-timer) nil
-    ;; cancel timer
-    (wall-cancel-timer)
-    ;; run (start) timer
-    (wall-run-timer)))
-
-(defun wall-set-timer (seconds &optional arg)
+(defun wall-update-timer (seconds &optional arg)
   "Set `wall-countdown' TIME seconds.
 If ARG, force the reloading of timer, otherwise
 asks for it."
   (interactive
-   (list (read-number "Time in seconds: ")
-         current-prefix-arg))
+   (list (read-number "Time in seconds: ") current-prefix-arg))
   ;; update idle elapse time (in seconds)
   (setq wall-countdown seconds)
   ;; reload timer
@@ -233,19 +230,14 @@ If ARGS is non-nil asks for the custom program
     (wall--debug-message "File %s not found" wallpaper))
    (t
     ;; TODO: Research, it is really necessary replace this for start-process?
-    (async-shell-command (format "%s %s %s"
-                                 wall-program
-                                 (or args wall-program-args)
-                                 wallpaper)))))
+    (async-shell-command
+     (format "%s %s %s" wall-program (or args wall-program-args) wallpaper)))))
 
 (defun wall-reset-current-wallpaper ()
   "Reset current wallpaper."
   (interactive)
-  ;; get current wallpaper
-  (let ((wallpaper (nth wall-images-index
-                        wall-images-list)))
-    ;; reset current wallpaper
-    (wall-set-wallpaper wallpaper nil)))
+  ;; reset current wallpaper
+  (wall-set-wallpaper (nth wall-images-index wall-images-list) nil))
 
 (defun wall-update-current-wallpaper-position (pos)
   "Update current wallpaper POS (position)."
@@ -269,10 +261,8 @@ If ARGS is non-nil asks for the custom program
     (wall-set-wallpaper wallpaper
                         (format "--bg-fill -g +0%s" pos))))
 
-(defun wall-rotate-wallpaper (&optional random)
-  "Set next/or RANDOM wallpaper.
-If optional RANDOM argument isn't nil, set next wallpaper
-'randomly'."
+(defun wall-set-next-wallpaper (&optional random)
+  "Set next or RANDOM wallpaper."
   (interactive "P")
   (let ((lim (length wall-images-list)))
     (when (> lim 0)
@@ -290,7 +280,7 @@ If optional RANDOM argument isn't nil, set next wallpaper
 (defun wall-random-wallpaper ()
   "Set random wallpaper."
   (interactive)
-  (wall-rotate-wallpaper t))
+  (wall-set-next-wallpaper t))
 
 (defun wall-echo-wallpapers-number ()
   "Set random wallpaper."
@@ -327,14 +317,10 @@ Report an error unless a valid docset is selected."
 
 (defun wall-del-wallpaper (wallpaper)
   "Delete a WALLPAPER image from the `wall-images-list.'"
-  ;; map wallpaper argument
-  ;; read the argument using the minibuffer
   (interactive
-   (list (wall--minibuffer-read "Image:"
-                                wall-images-list)))
+   (list (wall--minibuffer-read "Image:" wall-images-list)))
   ;; delete images from wallpapers image list
-  (setq wall-images-list
-        (delete wallpaper wall-images-list)))
+  (setq wall-images-list (delete wallpaper wall-images-list)))
 
 (defun wall-clean-all-wallpapers ()
   "Empty (clean) wallpaper images list, i.e, set `wall-images-list' to nil."
@@ -348,12 +334,11 @@ If optional ARG is non-nil, force the activation of
  debug messages."
   (interactive "P")
   ;; toggle logic
-  (setq wall-debug-messages-flag
-        (or arg (not wall-debug-messages-flag)))
+  (setq wall-debug-messages-flag (or arg (not wall-debug-messages-flag)))
   ;; display log message in echo area
   (message "[Wall-e]: Debug messages: %s"
-
            (if wall-debug-messages-flag "on" "off")))
+
 (defun wall-echo-mode-state ()
   "Show `wall-mode' state: on or off."
   (interactive)
@@ -392,17 +377,13 @@ and disables it otherwise."
 (defun turn-on-wall-mode ()
   "Enables wall-el minor-mode."
   (interactive)
-  ;; turn on wall-mode mode
   (wall-mode 1)
-  ;; show wall-mode mode state: on/off
   (wall-echo-mode-state))
 
 (defun turn-off-wall-mode ()
   "Disables wall-el minor-mode."
   (interactive)
-  ;; turn off wall-mode mode
   (wall-mode 0)
-  ;; show wall-mode mode state
   (wall-echo-mode-state))
 
 (provide 'wall)
