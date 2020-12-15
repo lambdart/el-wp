@@ -119,6 +119,9 @@ Default 10 minutes."
 (defvar wall-images-index 0
   "Wallpaper (images) list current index.")
 
+(defvar wall-current-wallpaper nil
+  "Wallpaper current image.")
+
 (defvar wall-images-index-history '()
   "Wallpaper index history.")
 
@@ -229,6 +232,8 @@ If ARGS is non-nil asks for the custom program
         (not (file-exists-p wallpaper)))
     (wall--debug-message "File %s not found" wallpaper))
    (t
+    ;; save current wallpaper
+    (setq wall-current-wallpaper wallpaper)
     ;; TODO: Research, it is really necessary replace this for start-process?
     (async-shell-command
      (format "%s %s %s" wall-program (or args wall-program-args) wallpaper)))))
@@ -237,14 +242,17 @@ If ARGS is non-nil asks for the custom program
   "Reset current wallpaper."
   (interactive)
   ;; reset current wallpaper
-  (wall-set-wallpaper (nth wall-images-index wall-images-list) nil))
+  (wall-set-wallpaper
+   (or wall-current-wallpaper
+       (nth wall-images-index
+            wall-images-list))))
 
 (defun wall-update-current-wallpaper-position (pos)
   "Update current wallpaper POS (position)."
   (interactive "sY-Position : ")
   ;; get current wallpaper
-  (let ((wallpaper (nth wall-images-index
-                        wall-images-list))
+  (let ((wallpaper (or wall-current-wallpaper
+                       (nth wall-images-index wall-images-list)))
         ;; get the number as a integer
         (num (string-to-number pos)))
     ;; set default position if none of the conditions meet
