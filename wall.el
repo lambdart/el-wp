@@ -214,16 +214,21 @@ asks for it."
   (if (or arg (y-or-n-p "Reload timer?"))
       (wall-reload-timer)))
 
+(defun wall--read-wallpaper ()
+  "Read wallpaper file path.
+If \\[universal-argument] is non-nil, read program arguments."
+  ;; get wallpaper (file image)
+  (list (expand-file-name
+         (read-file-name "Wallpaper: " wall-root-dir nil t))
+        ;; get current prefix argument (universal argument)
+        (when current-prefix-arg
+          (read-string "Args: " wall-program-args))))
+
 (defun wall-set-wallpaper (wallpaper &optional args)
   "Set WALLPAPER (full path image file) as the background.
 If ARGS is non-nil asks for the custom program
 (`wall-program') arguments."
-  (interactive
-   ;; get wallpaper (file image)
-   (list (read-file-name "Wallpaper: " wall-root-dir nil t)
-         ;; get current prefix argument (universal argument)
-         (when current-prefix-arg
-           (read-string "Args: " wall-program-args))))
+  (interactive (wall--read-wallpaper))
   (cond
    ((not (executable-find wall-program))
     (wall--debug-message "Program %s isn't executable" wall-program))
@@ -234,7 +239,7 @@ If ARGS is non-nil asks for the custom program
    (t
     ;; save current wallpaper
     (setq wall-current-wallpaper wallpaper)
-    ;; TODO: Research, it is really necessary replace this for start-process?
+    ;; use `async-shell-command' interface to execute the unix command
     (async-shell-command
      (format "%s %s %s" wall-program (or args wall-program-args) wallpaper)))))
 
