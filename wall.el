@@ -297,13 +297,13 @@ If RANDOM is non nil, set next wallpaper at random."
 
 (defun wall-set-next-wallpaper ()
   "Set next wallpaper."
-  (interactive "P")
-  (wall-set--next-wallpaper 1))
+  (interactive)
+  (wall-set--next-wallpaper 1 nil))
 
 (defun wall-set-previous-wallpaper ()
-  "Set previous wallpaper wallpaper."
-  (interactive "P")
-  (wall-set--next-wallpaper -1))
+  "Set previous wallpaper."
+  (interactive)
+  (wall-set--next-wallpaper -1 nil))
 
 (defun wall-random-wallpaper ()
   "Set random wallpaper."
