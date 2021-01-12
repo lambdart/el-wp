@@ -40,11 +40,16 @@
 
 (require 'files)
 (require 'cl-extra)
+(require 'ansi-color)
+
+;;; GROUP DEFINITION
 
 (defgroup wall nil
   "Wallpaper management."
   :group 'extensions
   :group 'convenience)
+
+;;; CUSTOM OPTIONS
 
 (defcustom wall-root-dir
   (expand-file-name "~/media/images/wallpapers/")
@@ -108,6 +113,23 @@ Default 10 minutes."
   :group 'wall
   :safe t)
 
+(defcustom wall-output-buffer-name "WALL-OUTPUT"
+  "Wall output buffer name."
+  :type 'string
+  :group 'wall
+  :safe t)
+
+(defcustom wall-create-buffer-flag nil
+  "Non-nil means create output buffer."
+  :type 'boolean
+  :group 'wall
+  :safe t)
+
+;;; GLOBAL VARIABLES
+
+(defvar wall-executable (executable-find wall-program)
+  "Executable full-path: `wall-program'.")
+
 (defvar wall-images-ext-regexp "[.jpg|.png|.jpeg|.git]$"
   "Images extension regex expression.")
 
@@ -136,11 +158,15 @@ on/off.")
   '(wall-images-list wall-timer)
   "List of internal variables.")
 
+;;; MACROS
+
 (defmacro wall--debug-message (fmt &rest args)
   "Display a internal message at the bottom of the screen.
 See `message' for more information about FMT and ARGS arguments."
   `(when wall-debug-messages-flag
      (message (concat wall-message-prefix ,fmt) ,@args)))
+
+;;; UTILS (INTERNAL) FUNCTIONS
 
 (defun wall--set-images-list (&optional dir)
   "Initialize the wallpaper images list and its length.
@@ -160,6 +186,59 @@ value of `wall-root-dir'."
     (set var nil))
   ;; restore index and length initial values
   (setq  wall-images-index 0))
+
+;;; SYSTEM PROCESS RELATED FUNCTIONS
+
+(defun wall--default-sentinel (process event)
+  "Wall default sentinel: PROCESS default EVENT handler function.
+This is also a template for another callbacks."
+  (let ((status (process-status process)))
+    (cond
+     ;; handle exit status
+     ((eq status 'exit)
+      ;; just debug message
+      (wall--debug-message "Process: %s had the event: %s" process event))
+     ;; handle another status
+     ((or
+       (eq status 'stop)
+       (eq status 'signal)
+       (eq status 'closed)
+       (eq status 'failed))
+      nil))))
+
+(defun wall--process-filter (process string)
+  "Filter PROCESS output STRING."
+  (let ((buffer (process-buffer process)))
+    (when buffer
+      (with-current-buffer buffer
+        (ansi-color-apply-on-region (point-min) (point-max))
+        (insert string)))))
+
+(defun wall--set-sentinel (process sentinel)
+  "Set wall PROCESS SENTINEL (callback) function to handle events."
+  (set-process-sentinel process sentinel))
+
+(defun wall--start-process (&optional sentinel &rest program-args)
+  "Start `wall-program' process passing its arguments PROGRAM-ARGS.
+Set a SENTINEL (callback) function to handle process
+signals and returns."
+  ;; create a buffer, if create buffer predicate is true
+  (let* ((buffer (when wall-create-buffer-flag
+                   (get-buffer-create wall-output-buffer-name)))
+         (process (apply 'start-process
+                         wall-program
+                         buffer
+                         wall-executable
+                         program-args)))
+    ;; verify if process was correctly created
+    (unless process
+      (error "Was not possible to create %s process" wall-executable))
+    ;; set (default or callback) sentinel
+    (wall--set-sentinel process (or sentinel 'wall--default-sentinel))
+    ;; set default filter
+    (set-process-filter process 'wall--process-filter)))
+
+;;; TIMER COMMANDS
 
 (defun wall--reload-timer ()
   "Maybe reload the timer."
@@ -219,6 +298,8 @@ asks for it."
   (if (or arg (y-or-n-p "Reload timer? "))
       (wall-reload-timer)))
 
+;; WALLPAPER MANAGEMENT COMMANDS
+
 (defun wall--read-wallpaper ()
   "Read wallpaper file path.
 If \\[universal-argument] is non-nil, read program arguments."
@@ -231,8 +312,8 @@ If \\[universal-argument] is non-nil, read program arguments."
 
 (defun wall-set-wallpaper (wallpaper &optional args)
   "Set WALLPAPER (full path image file) as the background.
-If ARGS is non-nil asks for the custom program
-`wall-program' arguments."
+If ARGS is non-nil, asks (read using the `minibuffer' facility)
+for the programs arguments."
   (interactive (wall--read-wallpaper))
   (cond
    ((not (executable-find wall-program))
@@ -244,9 +325,12 @@ If ARGS is non-nil asks for the custom program
    (t
     ;; save current wallpaper
     (setq wall-current-wallpaper wallpaper)
-    ;; use `async-shell-command' interface to execute the unix command
-    (async-shell-command
-     (format "%s %s %s" wall-program (or args wall-program-args) wallpaper)))))
+    ;; use `start-process' interface to execute the unix command
+    (apply 'wall--start-process nil `(,@(split-string
+                                         (or args wall-program-args))
+                                      ,wallpaper))
+    ;; show me the wallpaper set
+    (message "[Wall-e]: %s" wallpaper))))
 
 (defun wall-reset-current-wallpaper ()
   "Reset current wallpaper."
@@ -276,8 +360,7 @@ If ARGS is non-nil asks for the custom program
     (when (eq (string-match-p "^[\+\-]" pos) nil)
       (setq pos (concat "+" pos)))
     ;; set new wallpaper Y position
-    (wall-set-wallpaper wallpaper
-                        (format "--bg-fill -g +0%s" pos))))
+    (wall-set-wallpaper wallpaper (format "--bg-fill -g +0%s" pos))))
 
 (defun wall-set--next-wallpaper (direction &optional random)
   "Set next DIRECTION (must be a signed integer) wallpaper.
@@ -372,6 +455,8 @@ If optional ARG is non-nil, force the activation of
   (interactive)
   (message "[Wall-e]: mode %s" (if wall-mode "on" "off")))
 
+;;; MINOR MODE DEFINITION
+
 ;;;###autoload
 (define-minor-mode wall-mode
   "Define a new minor mode `wall-mode'.
@@ -400,6 +485,8 @@ and disables it otherwise."
     (wall--clean-internal-vars)
     ;; set mode indicator: false (nil)
     (setq wall-mode nil))))
+
+;;; MINOR MODE ON/OFF COMMANDS
 
 ;;;###autoload
 (defun turn-on-wall-mode ()
