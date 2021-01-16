@@ -242,10 +242,6 @@ signals and returns."
     (wall-cancel-timer)
     (wall-run-timer)))
 
-(defun wall-timer-forward-wallpaper (n)
-  "Forward N wallpapers."
-  (wall-set--next-wallpaper n))
-
 (defun wall-run-timer ()
   "Start/Initialize wallpaper rotate timer."
   (interactive)
@@ -259,8 +255,8 @@ signals and returns."
     (setq wall-timer
           (run-with-timer 1
                           wall-countdown
-                          'wall-timer-forward-wallpaper
-                          1)))))
+                          'wall-set-next-wallpaper
+                          t)))))
 
 (defun wall-cancel-timer ()
   "Cancel the `wall-timer'."
@@ -326,7 +322,7 @@ for the programs arguments."
                                          (or args wall-program-args))
                                       ,wallpaper))
     ;; show me the wallpaper set
-    (wall--debug-message "%s" wallpaper))))
+    (wall--debug-message "[%d] %s" wall-images-index wallpaper))))
 
 (defun wall-reset-current-wallpaper ()
   "Reset current wallpaper."
@@ -357,21 +353,27 @@ for the programs arguments."
     ;; set new wallpaper Y position
     (wall-set-wallpaper wallpaper (format "--bg-fill -g +0%s" pos))))
 
-(defun wall-set--next-wallpaper (direction &optional random)
-  "Set next DIRECTION (must be a signed integer) wallpaper.
+(defun wall-set--next-wallpaper (n &optional random)
+  "Set N next wallpaper.
 If RANDOM is non nil, set next wallpaper at random."
   (let ((lim (length wall-images-list)))
     (when (> lim 1)
-      (let ((n (+ wall-images-index direction)))
+      (let ((n (+ wall-images-index n)))
         ;; if not random update images current index
-        (if (not random)
-            (setq wall-images-index (if (> n lim) 0 n))
-          ;; otherwise get a random value (and update images current index)
-          (setq wall-images-index (cl-random lim)))
+        (setq wall-images-index (if random (cl-random lim)
+                                  (if (> n lim) 0 n)))
         ;; set the wallpaper
         (wall-set-wallpaper (nth wall-images-index wall-images-list))))))
-;; reload (maybe) timer
-;; (wall--reload-timer)))))
+
+(defun wall-set-next-wallpaper (&optional random)
+  "Set next wallpaper or RANDOM one."
+  (interactive "P")
+  (wall-set--next-wallpaper 1 random))
+
+(defun wall-set-random-wallpaper ()
+  "Set random wallpaper."
+  (interactive)
+  (wall-set--next-wallpaper 1 t))
 
 (defun wall-set-wallpaper-forward ()
   "Set next wallpaper."
@@ -382,11 +384,6 @@ If RANDOM is non nil, set next wallpaper at random."
   "Set previous wallpaper."
   (interactive)
   (wall-set--next-wallpaper -1))
-
-(defun wall-set-random-wallpaper ()
-  "Set random wallpaper."
-  (interactive)
-  (wall-set--next-wallpaper 1 t))
 
 (defun wall-echo-wallpapers-number ()
   "Set random wallpaper."
