@@ -39,6 +39,7 @@
 ;;; Code:
 
 (require 'files)
+(require 'cl-seq)
 (require 'cl-extra)
 (require 'ansi-color)
 
@@ -179,6 +180,20 @@ value of `wall-root-dir'."
                                      nil
                                      t)))
 
+(defun wall--add-images-list (dir)
+  "Add wallpapers images list.
+Use DIR (directory) if is set, otherwise the
+value of `wall-root-dir'."
+  (let ((images (directory-files-recursively dir
+                                wall-images-ext-regexp
+                                nil
+                                t)))
+  ;; add wallpaper images list
+    (and images
+         (setq wall-images-list
+               (cl-delete-duplicates
+                `(,@images ,@wall-images-list))))))
+
 (defun wall--clean-internal-vars ()
   "Clean internal lists."
   ;; clean internal variables
@@ -193,14 +208,14 @@ value of `wall-root-dir'."
   "Wall default sentinel: PROCESS default EVENT handler function.
 This is also a template for another callbacks."
   (let ((status (process-status process)))
-     ;; handle process status (for now do nothing)
-     (or
-       (eq status 'exit)
-       (eq status 'stop)
-       (eq status 'signal)
-       (eq status 'closed)
-       (eq status 'failed))
-      nil))
+    ;; handle process status (nothing for now)
+    (or
+     (eq status 'exit)
+     (eq status 'stop)
+     (eq status 'signal)
+     (eq status 'closed)
+     (eq status 'failed))
+    nil))
 
 (defun wall--process-filter (process string)
   "Filter PROCESS output STRING."
@@ -253,7 +268,7 @@ signals and returns."
    (t
     ;; set the idle auxiliary timer
     (setq wall-timer
-          (run-with-timer 1
+          (run-with-timer wall-countdown
                           wall-countdown
                           'wall-set-next-wallpaper
                           t)))))
@@ -320,9 +335,7 @@ for the programs arguments."
     ;; use `start-process' interface to execute the unix command
     (apply 'wall--start-process nil `(,@(split-string
                                          (or args wall-program-args))
-                                      ,wallpaper))
-    ;; show me the wallpaper set
-    (wall--debug-message "[%d] %s" wall-images-index wallpaper))))
+                                      ,wallpaper)))))
 
 (defun wall-reset-current-wallpaper ()
   "Reset current wallpaper."
@@ -354,16 +367,21 @@ for the programs arguments."
     (wall-set-wallpaper wallpaper (format "--bg-fill -g +0%s" pos))))
 
 (defun wall-set--next-wallpaper (n &optional random)
-  "Set N next wallpaper.
+  "Set next wallpaper +N.
 If RANDOM is non nil, set next wallpaper at random."
-  (let ((lim (length wall-images-list)))
-    (when (> lim 1)
-      (let ((n (+ wall-images-index n)))
-        ;; if not random update images current index
-        (setq wall-images-index (if random (cl-random lim)
-                                  (if (> n lim) 0 n)))
+  ;; first verify if have a images list
+  (if (not wall-images-list) nil
+    (let* ((lim (length wall-images-list))
+           (n (if (= lim 1) 0 (+ wall-images-index n))))
+      ;; if not random update images current index (save global index)
+      (setq wall-images-index (if random
+                                  (cl-random lim)
+                                (if (> n lim) 0 n)))
+      (let ((wallpaper (nth wall-images-index wall-images-list)))
         ;; set the wallpaper
-        (wall-set-wallpaper (nth wall-images-index wall-images-list))))))
+        (wall-set-wallpaper wallpaper)
+        ;; show me the wallpaper set
+        (wall--debug-message "[%d] %s" wall-images-index wallpaper)))))
 
 (defun wall-set-next-wallpaper (&optional random)
   "Set next wallpaper or RANDOM one."
@@ -385,12 +403,12 @@ If RANDOM is non nil, set next wallpaper at random."
   (interactive)
   (wall-set--next-wallpaper -1))
 
-(defun wall-echo-wallpapers-number ()
+(defun wall-show-wallpapers-number ()
   "Set random wallpaper."
   (interactive)
   (message "[Wall-e]: %d wallapers" (length wall-images-list)))
 
-(defun wall-echo-rotate-interval ()
+(defun wall-show-rotate-interval ()
   "Set random wallpaper."
   (interactive)
   (message "[Wall-e]: rotate interval %d minutes"
@@ -439,6 +457,15 @@ Report an error unless a valid docset is selected."
   ;; set wallpaper images list
   (wall--set-images-list dir))
 
+(defun wall-add-wallpaper-list (dir)
+  "Set wallpapers images list from the DIR."
+  (interactive
+   (list (expand-file-name
+          (read-directory-name "Directory: "
+                               wall-root-dir))))
+  ;; set wallpaper images list
+  (wall--add-images-list dir))
+
 (defun wall-toggle-debug-messages (&optional arg)
   "Toggle `wall-debug-messages-flag' bool value.
 If optional ARG is non-nil, force the activation of
@@ -450,7 +477,7 @@ If optional ARG is non-nil, force the activation of
   (message "[Wall-e]: Debug messages: %s"
            (if wall-debug-messages-flag "on" "off")))
 
-(defun wall-echo-mode-state ()
+(defun wall-show-mode-state ()
   "Show mode state: on or off."
   (interactive)
   (message "[Wall-e]: mode %s" (if wall-mode "on" "off")))
@@ -495,7 +522,7 @@ and disables it otherwise."
   ;; turn on
   (wall-mode 1)
   ;; show the state
-  (wall-echo-mode-state))
+  (wall-show-mode-state))
 
 (defun turn-off-wall-mode ()
   "Turn the minor-mode off."
@@ -503,7 +530,7 @@ and disables it otherwise."
   ;; turn on
   (wall-mode 0)
   ;; show state
-  (wall-echo-mode-state))
+  (wall-show-mode-state))
 
 (provide 'wall)
 
