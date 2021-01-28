@@ -126,6 +126,13 @@ Default 10 minutes."
   :group 'wall
   :safe t)
 
+;;; HOOKS
+
+(defcustom wall-mode-hook nil
+  "Hooks to un after the mode was turned on."
+  :group 'wall
+  :type 'hook)
+
 ;;; GLOBAL VARIABLES
 
 (defvar wall-executable (executable-find wall-program)
@@ -482,6 +489,11 @@ If optional ARG is non-nil, force the activation of
   (interactive)
   (message "[Wall-e]: mode %s" (if wall-mode "on" "off")))
 
+(defun wall-show-timer-state ()
+  "Show timer state: on or off."
+  (interactive)
+  (message "[Wall-e]: timer %s" (if wall-timer "on" "off")))
+
 ;;; MINOR MODE DEFINITION
 
 ;;;###autoload
@@ -494,8 +506,9 @@ a control variable `wall-mode'.
 Interactively with no prefix argument, it toggles the mode.
 A prefix argument enables the mode if the argument is positive,
 and disables it otherwise."
-
-  :group wall
+  nil
+  :group 'wall
+  :global t
   :lighter wall-minor-mode-string
   (cond
    (wall-mode
@@ -503,6 +516,8 @@ and disables it otherwise."
     (wall--set-images-list)
     ;; start timer
     (when wall-timer-flag (wall-run-timer))
+    ;; run hooks
+    (run-hooks wall-mode-hook)
     ;; set mode indicator: true
     (setq wall-mode t))
    (t
