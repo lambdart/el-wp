@@ -89,7 +89,7 @@
   :group 'wall
   :safe t)
 
-(defcustom wall-timer-flag nil
+(defcustom wall-start-timer-flag nil
   "Non-nil means start timer facility."
   :type 'boolean
   :group 'wall
@@ -192,10 +192,10 @@ value of `wall-root-dir'."
 Use DIR (directory) if is set, otherwise the
 value of `wall-root-dir'."
   (let ((images (directory-files-recursively dir
-                                wall-images-ext-regexp
-                                nil
-                                t)))
-  ;; add wallpaper images list
+                                             wall-images-ext-regexp
+                                             nil
+                                             t)))
+    ;; add wallpaper images list
     (and images
          (setq wall-images-list
                (cl-delete-duplicates
@@ -256,16 +256,18 @@ signals and returns."
     ;; set default filter
     (set-process-filter process 'wall--process-filter)))
 
+;;; TIMER INTERNALS
+
+(defun wall--reset-timer ()
+  "Maybe reset the timer."
+  (and wall-timer
+       (wall-cancel-timer)
+       (wall-start-timer)))
+
 ;;; TIMER COMMANDS
 
-(defun wall--reload-timer ()
-  "Maybe reload the timer."
-  (if (not wall-timer) nil
-    (wall-cancel-timer)
-    (wall-run-timer)))
-
-(defun wall-run-timer ()
-  "Start/Initialize wallpaper rotate timer."
+(defun wall-start-timer ()
+  "Star wallpaper rotate timer."
   (interactive)
   (cond
    ;; verify if idle timer was already initialized
@@ -291,11 +293,12 @@ signals and returns."
   ;; display timer debug message
   (wall--debug-message "timer off"))
 
-(defun wall-reload-timer ()
-  "Reload the running timer."
+(defun wall-reset-timer ()
+  "Reset the running timer."
   (interactive)
+  ;; reset timer
   (wall-cancel-timer)
-  (wall-run-timer)
+  (wall-start-timer)
   ;; show the current count down timer
   (wall--debug-message "current time %ds" wall-countdown))
 
@@ -309,8 +312,8 @@ asks for it."
   ;; update idle elapse time (in seconds)
   (setq wall-countdown seconds)
   ;; reload timer
-  (when (or arg (y-or-n-p "Reload timer? "))
-    (wall-reload-timer)))
+  (when (or arg (y-or-n-p "Reset timer? "))
+    (wall-reset-timer)))
 
 ;; WALLPAPER MANAGEMENT COMMANDS
 
@@ -352,8 +355,8 @@ for the programs arguments."
                           (nth wall-images-index
                                wall-images-list))))
 
-(defun wall-update-current-wallpaper-pos (pos)
-  "Update current wallpaper POS (position)."
+(defun wall-set-wallpaper-position (pos)
+  "Set wallpaper's position (POS)."
   (interactive "sY-Position : ")
   ;; get current wallpaper
   (let ((wallpaper (or wall-current-wallpaper
@@ -368,8 +371,8 @@ for the programs arguments."
         ;; set default value
         (setq pos "+0"))
     ;; update pos signal indicator (if necessary)
-    (when (eq (string-match-p "^[\+\-]" pos) nil)
-      (setq pos (concat "+" pos)))
+    (and (eq (string-match-p "^[\+\-]" pos) nil)
+         (setq pos (concat "+" pos)))
     ;; set new wallpaper Y position
     (wall-set-wallpaper wallpaper (format "--bg-fill -g +0%s" pos))))
 
@@ -377,41 +380,42 @@ for the programs arguments."
   "Set next wallpaper +N.
 If RANDOM is non nil, set next wallpaper at random."
   ;; first verify if have a images list
-  (if (not wall-images-list) nil
-    (let* ((lim (length wall-images-list))
-           (n (if (= lim 1) 0 (+ wall-images-index n))))
-      ;; if not random update images current index (save global index)
-      (setq wall-images-index (if random
-                                  (cl-random lim)
-                                (if (> n lim) 0 n)))
-      (let ((wallpaper (nth wall-images-index wall-images-list)))
-        ;; set the wallpaper
-        (wall-set-wallpaper wallpaper)
-        ;; show me the wallpaper set
-        (wall--debug-message "[%d] %s" wall-images-index wallpaper)))))
+  (and wall-images-list
+       (let* ((lim (length wall-images-list))
+              (n (if (= lim 1) 0 (+ wall-images-index n))))
+         ;; if not random update images current index (save global index)
+         (setq wall-images-index (if random
+                                     (cl-random lim)
+                                   (if (> n lim) 0 n)))
+         (let ((wallpaper (nth wall-images-index wall-images-list)))
+           ;; set the wallpaper
+           (wall-set-wallpaper wallpaper)
+           ;; show me the wallpaper set
+           (wall--debug-message "[%d] %s" wall-images-index wallpaper)))))
 
 (defun wall-set-next-wallpaper (&optional random)
-  "Set next wallpaper or RANDOM one."
+  "Set next wallpaper.
+When RANDOM is non-nil, set it at random."
   (interactive "P")
   (wall-set--next-wallpaper 1 random))
 
 (defun wall-set-random-wallpaper ()
-  "Set random wallpaper."
+  "Set wallpaper randomly."
   (interactive)
   (wall-set--next-wallpaper 1 t))
 
-(defun wall-set-wallpaper-forward ()
-  "Set next wallpaper."
+(defun wall-forward-wallpaper ()
+  "Forward one wallpaper, i.e, the next index on the images list."
   (interactive)
   (wall-set--next-wallpaper 1))
 
-(defun wall-set-wallpaper-backward ()
-  "Set previous wallpaper."
+(defun wall-backward-wallpaper ()
+  "Backward one wallpaper, i.e, the previous index on the images list."
   (interactive)
   (wall-set--next-wallpaper -1))
 
 (defun wall-show-wallpapers-number ()
-  "Set random wallpaper."
+  "Show the number of wallpapers."
   (interactive)
   (message "[Wall-e]: %d wallapers" (length wall-images-list)))
 
@@ -515,7 +519,7 @@ and disables it otherwise."
     ;; set internal wallpaper images lists
     (wall--set-images-list)
     ;; start timer
-    (when wall-timer-flag (wall-run-timer))
+    (when wall-start-timer-flag (wall-start-timer))
     ;; run hooks
     (run-hooks wall-mode-hook)
     ;; set mode indicator: true
