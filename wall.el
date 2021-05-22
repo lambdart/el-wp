@@ -357,7 +357,7 @@ for the programs arguments."
 
 (defun wall-set-wallpaper-position (pos)
   "Set wallpaper's position (POS)."
-  (interactive "sY-Position : ")
+  (interactive "sY-Position: ")
   ;; get current wallpaper
   (let ((wallpaper (or wall-current-wallpaper
                        (nth wall-images-index wall-images-list)))
@@ -502,7 +502,7 @@ If optional ARG is non-nil, force the activation of
 
 ;;;###autoload
 (define-minor-mode wall-mode
-  "Define a new minor mode `wall-mode'.
+  "Define wallpaper manager minor mode.
 
 This defines the toggle command `wall-mode' and (by default)
 a control variable `wall-mode'.
@@ -510,7 +510,6 @@ a control variable `wall-mode'.
 Interactively with no prefix argument, it toggles the mode.
 A prefix argument enables the mode if the argument is positive,
 and disables it otherwise."
-  nil
   :group 'wall
   :global t
   :lighter wall-minor-mode-string
