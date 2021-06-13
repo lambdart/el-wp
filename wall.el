@@ -425,6 +425,12 @@ When RANDOM is non-nil, set it at random."
   (message "[Wall-e]: rotate interval %d minutes"
            (/ wall-countdown 60)))
 
+(defun wall-show-current-wallpaper ()
+  "Reset current wallpaper."
+  (interactive)
+  ;; reset current wallpaper
+  (message "[Wall-e]: %s" wall-current-wallpaper))
+
 (defun wall--minibuffer-read (prompt choices)
   "Read from the `minibuffer' using PROMPT and CHOICES as candidates.
 Report an error unless a valid docset is selected."
